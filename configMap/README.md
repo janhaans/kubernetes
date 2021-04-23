@@ -11,7 +11,7 @@ Deploy ConfigMap's and Pod:\
 `$> kubectl apply -f busybox-configmap-2.yaml`\
 `$> kubectl apply -f busybox-pod.yaml`
 
-You can use the following command to check if everything is working:\
+You can use following commands to check if everything is working:\
 `$> kubectl exec -it busybox -- sh`\
 `#> env | grep env`\
 `#> cat /config/config.properties`\
