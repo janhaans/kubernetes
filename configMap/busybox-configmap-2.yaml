@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  config.properties: |
+    var.one=value1
+    var.two=value2
+    var.types=string,list
+  user.properties: |
+    user.one=good
+    user.two=bad
+kind: ConfigMap
+metadata:
+  name: busybox-configuration

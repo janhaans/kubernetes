@@ -8,7 +8,17 @@ spec:
   containers:
   - image: busybox
     name: busybox
-    command: ["sleep", "3600"]
+    command: ["sleep", $(sleeping-time)]
+    env:
+    - name: env1
+      value: value1
+    envFrom:
+      - configMapRef:
+          name: busybox-environment
+    volumeMounts:
+    - name: configuration
+      mountPath: /config 
+      readOnly: true
     resources:
       requests:
         cpu: "0.25"
@@ -18,4 +28,13 @@ spec:
         memory: "128Mi"
   dnsPolicy: ClusterFirst
   restartPolicy: Always
+  volumes:
+  - name: configuration
+    configMap:
+      name: busybox-configuration
+      items:
+      - key: "config.properties"
+        path: "config.properties"
+      - key: "user.properties"
+        path: "user.properties" 
 status: {}

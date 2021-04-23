@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  env2: value2
+  sleeping-time: "2000"
+kind: ConfigMap
+metadata:
+  name: busybox-environment
