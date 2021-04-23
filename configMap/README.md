@@ -13,8 +13,8 @@ Deploy ConfigMap's and Pod:\
 
 You can use the following command to check if everything is working:\
 `$> kubectl exec -it busybox -- sh`\
-`#> env`\
+`#> env | grep env`\
 `#> cat /config/config.properties`\
 `#> cat /config/user.properties`\
-`#> ps`
+`#> ps | grep sleep`
 

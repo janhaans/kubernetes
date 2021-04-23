@@ -12,6 +12,11 @@ spec:
     env:
     - name: env1
       value: value1
+    - name: env3
+      valueFrom:
+        configMapKeyRef:
+          key: setting
+          name: busybox-configuration
     envFrom:
       - configMapRef:
           name: busybox-environment
