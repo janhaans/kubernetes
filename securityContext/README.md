@@ -2,7 +2,7 @@
 
 Reference example to use securityContext in order to:
 
-1. Run processes in container not as root with
+1. Run processes in container not as root
 2. Create files in container not owned by root
 
 Deploy pod:\
