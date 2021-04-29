@@ -21,6 +21,7 @@ Check that new created files have owner UID = 1000 and GID = 3000:\
 `$> kubectl exec -it security-context-demo -- sh`\
 `#> cd /data/demo`\
 `#> echo "Hello World" > greeting.txt`\
-`#> ls -l`
+`#> ls -l`\
+If **fsGroup** was defined with for example 2000, then the created files would have GID = 2000
 
-In this example **securityContext** is defined at Pod level. You can also define **securityContext** at container level. If **securityContext** is defined at both Pod level and container level, then the definition at container precedes the definition at Pod level. 
+In this example **securityContext** is defined at Pod level. You can also define **securityContext** at container level. If **securityContext** is defined at both Pod level and container level, then the definition at container level precedes the definition at Pod level. 
