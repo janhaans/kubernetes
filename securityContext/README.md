@@ -22,3 +22,5 @@ Check that new created files have owner UID = 1000 and GID = 3000:\
 `#> cd /data/demo`\
 `#> echo "Hello World" > greeting.txt`\
 `#> ls -l`
+
+In this example **securityContext** is defined at Pod level. You can also define **securityContext** at container level. If **securityContext** is defined at both Pod level and container level, then the definition at container precedes the definition at Pod level. 
