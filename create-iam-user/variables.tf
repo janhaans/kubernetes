@@ -11,6 +11,5 @@ variable "user_name_tags" {
 }
 
 variable "policy_arn" {
-  type = string
-  default = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+  type = map(string)
 }
