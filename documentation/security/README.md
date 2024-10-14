@@ -194,7 +194,7 @@ spec:
 
 `kubectl get csr jane -o jsonpath='{.status.certificate}' | base64 --decode > jane.crt`
 
-In the `Kube Controller Manager` configuration (`/etc/kubernets/manifests/kube-contrller-manager.yaml`) are the locations of the CA key and CA certificate specified, which are required to sign a CSR.
+In the `Kube Controller Manager` configuration (`/etc/kubernets/manifests/kube-controller-manager.yaml`) are the locations of the CA key and CA certificate specified, which are required to sign a CSR.
 
 - `--cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt`
 - `--cluster-signing-key-file=/etc/kubernetes/pki/key.crt`
