@@ -198,3 +198,188 @@ In the `Kube Controller Manager` configuration (`/etc/kubernets/manifests/kube-c
 
 - `--cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt`
 - `--cluster-signing-key-file=/etc/kubernetes/pki/key.crt`
+
+## KubeConfig
+
+You can send requests to kubernetes (`Kube API Server`) with:
+
+- `curl`
+
+```
+curl https://kube-apiserver:6443/api/v1/pods
+    --key admin.key
+    --cert admin.crt
+    --cacert ca.crt
+```
+
+- `kubectl`
+
+```kubectl get pods
+    --server kube-apiserver:6443
+    --client-key admin.key
+    --client-certificate admin.crt
+    --certificate-authority ca.cert
+```
+
+It is tedious to provide for each `kubectl` command these parameters. You can move these parameters to a `config` file:
+
+```
+kubectl get pods
+    --kubeconfig config
+```
+
+By default `kubectl` looks for a config file in `$HOME/.kube/config`. TheKubeConfig file has 3 sections:
+
+- **Clusters**: array of Kubernetes clusters where each cluster has a name, endpoint and CA cerificate
+- **Contexts**: array of contexts where for each context a user is associated with a cluster and optionally namespace
+- **Users**: array of Kubernetes users where each user has a name, key and certificate.
+
+```
+apiVersion: v1
+kind: Config
+clusters:
+- name: my-cluster
+  cluster:
+    server: https://kubernetes:6443
+    certificate-authority: /path/to/ca.crt   # Path to the cluster's CA certificate
+contexts:
+- name: my-context
+  context:
+    cluster: my-cluster
+    user: my-user
+    namespace: my-namespace                 # Optionally
+users:
+- name: my-user
+  user:
+    client-certificate: /path/to/client.crt  # Path to the user's client certificate
+    client-key: /path/to/client.key          # Path to the user's client key
+current-context: my-context
+
+```
+
+In the KubeConfig file the default context is specified. Always use a full path to specifiy where the keys and certificates are located.
+
+**View KubeConfig file**
+
+```
+kubectl config view  (will show $HOME/.kube/config)
+kubectl config view --kubeconfig=my-custom-config
+```
+
+**List all contexts**
+
+`kubectl config get-contexts`
+
+**Use another context**
+
+` kubectl config use {context name}`
+
+## API Groups
+
+All Kubernetes resources are grouped in different API groups. Each resource has a set of actions or verbs, such as:
+
+- list
+- get
+- create
+- delete
+- update
+- watch
+
+These verbs are used to specify authorization.
+At the top level the API groups can be seen with:
+
+```
+curl http://{hostname kube api server}:6443 -k
+    --key /path/to/server.key
+    --cert /path/to/server.crt
+    --cacert /path/to/ca.crt
+```
+
+or, if you do want to use the certificates in KubeConfig:
+
+```
+kubectl proxy  #expose a port(8001) on localhost
+curl http://localhost:8001 -k
+```
+
+## Authorization
+
+Kubernetes supports multiple authorization modes
+
+- **Node Authorization**
+  While joining the `kubelet` of each node to the cluster, it is node authorised, by providing a certificate that has Common Name prefix `system:node` and group or Organization `system:nodes`
+- **ABAC** (Attribute Based Access Control)
+  A user is directly associated with a set of resource permissions
+- **RBAC** (Role Based Access Control)
+  A user is associated with a Role. A role contains a set of resource permissions
+- **Webhook**
+  Delegate authorization to a third party tool, like for exampleOpen Policy Agent
+- **AlwaysAllow**
+  Allows all access requests
+- **AllwaysDeny**
+  Denies all access requests
+
+The authorization is mode is set on the `Kube API server` with parameter `--authorization-mode`. If you do not set this option then by default the authorization mode is `AlwaysAllow`. You can set multiple authorization modes, such as for example `--authorization-mode=Node,RBAC,Webhook`. The order of authorization is the order specified in `authorization-mode`.
+
+## RBAC
+
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default                # Specify the namespace this Role applies to
+  name: pod-reader                  # Name of the Role
+rules:
+- apiGroups: [""]                   # Empty for core group for any other group specify group name
+  resources: ["pods", "secrets"]
+  verbs: ["get", "list", "watch"]
+```
+
+This role only defines the permissions. To assign it to a user or service account, you would need to create a **RoleBinding**.
+
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pods-binding
+  namespace: default
+subjects:
+- kind: User                            # or 'ServiceAccount' if binding to a service account
+  name: jane                            # Name of the user or service account
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-reader                      # The Role created above
+  apiGroup: rbac.authorization.k8s.io
+```
+
+You as a Kubernetes user can check access:
+
+```
+kubectl auth can-i create deployments
+kubectl auth can-i delete nodes
+....
+```
+
+As a Kubernetes administrator you can check access of users:
+
+```
+kubectl auth can-i create deployments --as dev-user
+kubectl auth can-i delete nodes --as dev-user
+kubectl auth can-i create pods --as dev-user --namespace test
+....
+```
+
+You can create a role that grants permissions to specific resources:
+
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer                   # Name of the Role
+rules:
+- apiGroups: [""]                   # Empty for core group for any other group specify group name
+  resources: ["pods"]
+  verbs: ["get", "create", "update"]
+  resourceNames: ["blue", "orange"]
+```
