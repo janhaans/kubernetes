@@ -321,7 +321,7 @@ Kubernetes supports multiple authorization modes
 
 The authorization is mode is set on the `Kube API server` with parameter `--authorization-mode`. If you do not set this option then by default the authorization mode is `AlwaysAllow`. You can set multiple authorization modes, such as for example `--authorization-mode=Node,RBAC,Webhook`. The order of authorization is the order specified in `authorization-mode`.
 
-## RBAC
+## RBAC - Role and RoleBinding
 
 ```
 apiVersion: rbac.authorization.k8s.io/v1
@@ -391,7 +391,7 @@ kubectl create role {role name} --resource={resource} --verb=get, update,delete
 kubectl create rolebinding {rolebinding name} --role={role name} --user={user name}
 ```
 
-## ClusterRoles
+## ClusterRole and ClusterRoleBinding
 
 ClusterRole is similar to Role, except ClusterRole is not namespaced, the permissions assigned to resources apply to all namespaces in a cluster. Roles assigns permissions to namespaced resources only, ClusterRoles assign permissions to cluster and namespaced resources.
 
@@ -403,7 +403,7 @@ Show all cluster resources in a cluster:
 
 `kubectl api-resources --namespaced=false`
 
-To assign a ClusterRole to a user or service account, you would need to create a **ClusterxRoleBinding**
+To assign a ClusterRole to a user or service account, you would need to create a **ClusterRoleBinding**
 
 Some other commands:
 
@@ -423,9 +423,11 @@ kubectl get serviceaccount {service account name}
 kubectl describe serviceaccount {service account name}
 ```
 
-Each namespace has a `default` serviceaccount. When a pod is created and now serviceaccount has been specified, the pod will be associated with the `default` serviceaccount. The `default` serviceaccount is very restricted, it does not have the permission to send requests to `Kube API Server`.
+Each namespace has a `default` serviceaccount. When a pod is created and no serviceaccount has been specified, the pod will be associated with the `default` serviceaccount. The `default` serviceaccount is very restricted, it does not have the permission to send requests to `Kube API Server`.
 
-You can associate a pod with a serviceaccount with the `serviceAccountName` field in the Pod's spec section. Kubernetes takes care that the Pod automatically mounts the secret that hold the serviceaccount token. If you do not want this, then set the `automountServiceAccountToken=false` in the Pod's spec section.
+You can associate a pod with a serviceaccount with the `serviceAccountName` field in the Pod's spec section. Kubernetes takes care that the Pod automatically mounts the secret that holds the serviceaccount token. If you do not want this, then set the `automountServiceAccountToken=false` in the Pod's spec section.
+
+To add namespaced resource or cluster resource permissions to a serviceaccount, bind the service account to a `Role` or `ClusterRole` in respctively a `RoleBinding` or `ClusterRoleBinding`
 
 ## Image Security
 
@@ -539,7 +541,8 @@ A Kubernetes NetworkPolicy is a resource that defines how pods are allowed to co
 - source/destination IP
 - pod labels
 - namespace.
-  It can restrict both ingress (incoming) and egress (outgoing) traffic for a group of pods.
+
+It can restrict both ingress (incoming) and egress (outgoing) traffic for a group of pods.
 
 **Why Use NetworkPolicies?**
 By default, pods in Kubernetes can communicate with each other without any restrictions. Network policies provide a way to isolate and secure your application by controlling what traffic is allowed to enter and leave the pod.
