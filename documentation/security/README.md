@@ -335,7 +335,7 @@ rules:
   verbs: ["get", "list", "watch"]
 ```
 
-This role only defines the permissions. To assign it to a user or service account, you would need to create a **RoleBinding**.
+This role only defines the permissions. Roles are namespaced. If no namespace is provided the role is associated with the default namespace. Note a role can only assign permission to namespaces resources. To assign a role to a user or service account, you would need to create a **RoleBinding**.
 
 ```
 apiVersion: rbac.authorization.k8s.io/v1
@@ -382,4 +382,204 @@ rules:
   resources: ["pods"]
   verbs: ["get", "create", "update"]
   resourceNames: ["blue", "orange"]
+```
+
+Some other commands:
+
+```
+kubectl create role {role name} --resource={resource} --verb=get, update,delete
+kubectl create rolebinding {rolebinding name} --role={role name} --user={user name}
+```
+
+## ClusterRoles
+
+ClusterRole is similar to Role, except ClusterRole is not namespaced, the permissions assigned to resources apply to all namespaces in a cluster. Roles assigns permissions to namespaced resources only, ClusterRoles assign permissions to cluster and namespaced resources.
+
+Show all namespaced resources in a cluster:
+
+`kubectl api-resources --namespaced=true`
+
+Show all cluster resources in a cluster:
+
+`kubectl api-resources --namespaced=false`
+
+To assign a ClusterRole to a user or service account, you would need to create a **ClusterxRoleBinding**
+
+Some other commands:
+
+```
+kubectl create clusterrole {clusterrole name} --resource={resource} --verb=get, update,delete
+kubectl create clusterrolebinding {clusterrolebinding name} --clusterrole={role name} --user={user name}
+```
+
+## Service accounts
+
+There are 2 type of accounts: Users (human beings) and ServiceAccounts (applications)
+
+```
+kubectl create serviceaccount {service account name}
+kubectl create token {service account name}             # Created token is time limited (TokenRequest API)
+kubectl get serviceaccount {service account name}
+kubectl describe serviceaccount {service account name}
+```
+
+Each namespace has a `default` serviceaccount. When a pod is created and now serviceaccount has been specified, the pod will be associated with the `default` serviceaccount. The `default` serviceaccount is very restricted, it does not have the permission to send requests to `Kube API Server`.
+
+You can associate a pod with a serviceaccount with the `serviceAccountName` field in the Pod's spec section. Kubernetes takes care that the Pod automatically mounts the secret that hold the serviceaccount token. If you do not want this, then set the `automountServiceAccountToken=false` in the Pod's spec section.
+
+## Image Security
+
+```
+image: {registry}/{account}/{repository}
+default registry = docker.io
+default account of registry docker.io = library
+```
+
+The default registry `docker.io` is a public registry. When you want to store the container images in a private registry you must first login:
+
+**Docker**
+
+```
+docker login private-registry.io
+docker run private-registry.io/apps/internal-app
+```
+
+**Kubernetes**
+
+To pull an image from a private registry in Kubernetes, you need to create a Pod definition and use an imagePullSecret. The imagePullSecret contains the credentials required to authenticate to the private registry.
+
+1. **Create an Image Pull Secret**
+
+```
+kubectl create secret docker-registry myregistrykey \
+    --docker-server=<your-registry-server> \
+    --docker-username=<your-username> \
+    --docker-password=<your-password> \
+    --docker-email=<your-email>
+```
+
+Note: there are 3 types of secrets:
+
+- generic
+- TLS
+- docker registry
+
+2. **Pod definition with `imagePullSecrets`**
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: private-registry-pod
+  labels:
+    app: my-app
+spec:
+  containers:
+  - name: my-container
+    image: <your-registry-server>/my-app-image:latest  # Image from the private registry
+    ports:
+    - containerPort: 80
+  imagePullSecrets:
+  - name: myregistrykey  # Reference the image pull secret created earlier
+```
+
+## Security Context
+
+The process in a docker container runs by default as `root` user. You can change this:
+
+` docker run --user=1000 ubuntu sleep 3600`
+
+or in Dockerfile using the `User` instruction
+
+```
+From ubuntu
+
+User 1000
+```
+
+The `root` user in a docker container is not really the `root` user because a real `root` user has unlimited access to the system, a container `root` user is by default limited (by using Linux capabilities). If you wish to overwrtite the default Linux capabilities:
+
+```
+docker run --cap-add <Linux capability> ubuntu     # Add a Linux capability
+docker run --cap-drop <Linux capability> ubuntu    # Drop a Linux capability
+```
+
+In Kubernetes, the securityContext defines various security-related settings for a Pod or an individual container. It is used to configure security options such as user IDs, group IDs, Linux capabilities, and read-only filesystem settings that help enforce security policies within your workloads.
+
+Where is securityContext used?
+
+- Pod-level securityContext: Applies security settings to all containers in the pod.
+- Container-level securityContext: Applies security settings to a specific container.
+  The securityContext fields at the container level override the pod-level settings if both are specified.
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: secure-pod
+spec:
+  securityContext:                      # Pod-level securityContext
+    runAsUser: 1000                     # All containers in this pod will run as user ID 1000
+    runAsGroup: 3000                    # All containers will run with group ID 3000
+    fsGroup: 2000                       # Volumes will be owned by group ID 2000
+  containers:
+  - name: secure-container
+    image: nginx
+    securityContext:                    # Container-level securityContext
+      capabilities:
+        add: ["NET_ADMIN", "SYS_TIME"]  # Adding Linux capabilities
+      runAsUser: 2000                   # Overrides pod-level runAsUser (specific to this container)
+      readOnlyRootFilesystem: true      # Set the root filesystem as read-only
+```
+
+## Network Policy
+
+A Kubernetes NetworkPolicy is a resource that defines how pods are allowed to communicate with each other and with other network endpoints. It allows you to control the flow of traffic to and from Kubernetes pods based on various rules, such as:
+
+- source/destination IP
+- pod labels
+- namespace.
+  It can restrict both ingress (incoming) and egress (outgoing) traffic for a group of pods.
+
+**Why Use NetworkPolicies?**
+By default, pods in Kubernetes can communicate with each other without any restrictions. Network policies provide a way to isolate and secure your application by controlling what traffic is allowed to enter and leave the pod.
+
+**Basic Concepts**
+
+- **Pod Selector**: NetworkPolicies use labels to select which pods the rules apply to.
+- **Ingress**: Defines the incoming traffic that is allowed to reach the selected pods.
+- **Egress**: Defines the outgoing traffic that the selected pods are allowed to send.
+- **Namespace Selector**: Allows you to define policies based on the namespace of the source or destination pods.
+- **IP Block**: Allows specifying IP ranges to control traffic coming from or going to certain IPs.
+
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-frontend-to-db
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: backend            # Apply this NetworkPolicy to pods with label 'app=backend'
+  policyTypes:
+  - Ingress                   # This policy affects incoming traffic (Ingress)
+  - Egress                    # This policy affects outgoing traffic (Egress)
+  ingress:
+  - from:
+    - podSelector:            # Only allow traffic from pods with label `app=frontend` in `prod` namespace
+        matchLabels:
+          app: frontend
+      namespaceSelector:
+        matchLabels:
+          name: prod
+     - ipBlock:
+        cidr: 192.168.5.10/24  # Allow traffic only from this IP range
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 10.10.10.0/24   # Allow traffic only to this IP range
+    ports:
+    - protocol: TCP
+      port: 5432            # Allow traffic only on port 5432 (e.g., PostgreSQL)
 ```
