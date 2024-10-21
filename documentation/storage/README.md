@@ -23,7 +23,7 @@ NEW WAY OF BIND MOUNTING: `docker run --mount type=bind,source=/data/mysql,targe
 **Storage Drivers** enable/manage the Docker layered storage architecture.
 **Volume Drivers** enable/manage Docker volumes
 
-![Storage Drivers versus Volume Drivers](storage_volume_drivers.jpg)
+![Storage Drivers versus Volume Drivers](storage_volume_drivers.png)
 
 For example: Docker container mounting a AWS EBS:
 
