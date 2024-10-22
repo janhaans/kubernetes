@@ -89,6 +89,8 @@ ip netns exec red ip link
 ip netns exec red route
 ```
 
+### Virtual Link
+
 To create two network namespaces (red and blue) and set up a virtual link between them on a Linux system, you can follow these steps. This will use ip commands from the iproute2 package, which is commonly available on modern Linux distributions.
 
 ```
@@ -117,6 +119,8 @@ sudo ip netns exec blue ip link set lo up
 sudo ip netns exec red ping 192.168.15.2
 sudo ip netns exec blue ping 192.168.15.1
 ```
+
+### Virtual Bridge
 
 To connect the red and blue network namespaces via a virtual bridge, we will set up a virtual bridge interface (br0) and attach the virtual Ethernet interfaces from both namespaces to the bridge. This will allow the red and blue namespaces to communicate through the bridge, much like devices connected to a physical switch.
 
@@ -160,6 +164,8 @@ sudo ip netns exec red ping 192.168.15.2
 sudo ip netns exec blue ping 192.168.15.1
 ```
 
+### Connect to the outside world
+
 To allow the blue network namespace to connect to the external world, you need to configure network address translation (NAT) on the host machine. This involves enabling IP forwarding, creating a default route for the blue namespace, and configuring iptables to masquerade outgoing traffic from blue so that it appears to come from the host’s IP address.
 
 ```
@@ -180,6 +186,8 @@ sudo iptables -t nat -A POSTROUTING -s 192.168.15.0/24 -o eth0 -j MASQUERADE
 sudo ip netns exec blue ping 8.8.8.8
 ```
 
+### Accessed from the outside world
+
 To allow the external world to access services running inside the blue namespace, you will need to configure port forwarding on the host machine. This involves:
 
 1. Forwarding traffic from a specific port on the host to the blue namespace.
@@ -199,3 +207,66 @@ sudo iptables -A FORWARD -p tcp -d 192.168.15.2 --dport 80 -j ACCEPT
 # Enable IP forwarding if necessary
 sudo sysctl -w net.ipv4.ip_forward=1
 ```
+
+## Docker networking
+
+Show all docker networks:
+
+`docker network ls`
+
+In docker there are 3 networking options:
+
+1. **None network**
+
+The docker container is not connected to any network and cannot talk to any other container or the outside world.
+
+`docker run --network none nginx`
+
+2. **Host network**
+
+The docker container is connected to the host interface
+
+`docker run --network host nginx`
+
+In setup the nginx process in the network container binds to port 80 of the host interface. As a consequence a second nginx container cannot be started, because port 80 on the host interface is already occupied.
+
+3. **Bridge network**
+
+[docker-bridge](docker-bridge.png)
+
+Each docker container has its own network namespace, its own interface and IP address and is connected to the docker bridge to talk to other containers and the host. However this network is isolated, the docker container cannot talk to the outside world.
+
+`docker run nginx`
+
+The docker container can be accessed from the outside world using port-mapping:
+
+`docker run -p 8080:80 nginx`
+
+Port 80 on the host interface is mapped to port 80 of the docker container. How this works go to [Accessed from the outside world](#accessed-from-the-outside-world).
+
+Show the NAT rules on host:
+
+`iptables -nvL -t nat`
+
+## CNI
+
+Container Networking Interface
+
+When a container runtime is created several network artifacts are created:
+
+- Create a network namespace
+- Create virtual bridge
+- Create virtual link
+- Attach virtual link interface to namespace
+- Attach other virtual link interface to virtual bridge
+- Assign IP addresses to the virtual link interfaces
+- Bring the interfaces up
+- Enable NAT - IP Masquerade
+
+These actions are executed by a CNI plugin that implements CNI. The container runtime only needs to call CNI.
+
+Note: Docker does not support CNI.
+
+## Kubernetes Cluster Network
+
+Open ports, see [Kubernetes Documentation - Ports and Protocols](https://kubernetes.io/docs/reference/networking/ports-and-protocols/)
