@@ -242,7 +242,7 @@ The docker container can be accessed from the outside world using port-mapping:
 
 `docker run -p 8080:80 nginx`
 
-Port 80 on the host interface is mapped to port 80 of the docker container. How this works go to [Accessed from the outside world](#accessed-from-the-outside-world).
+Port 8080 on the host interface is mapped to port 80 of the docker container. How this works go to [Accessed from the outside world](#accessed-from-the-outside-world).
 
 Show the NAT rules on host:
 
@@ -270,3 +270,23 @@ Note: Docker does not support CNI.
 ## Kubernetes Cluster Network
 
 Open ports, see [Kubernetes Documentation - Ports and Protocols](https://kubernetes.io/docs/reference/networking/ports-and-protocols/)
+
+## Pod Networking
+
+Kubernetes does not implement Pod networking, but has requirements:
+
+- Every Pod should have an IP address
+- Every Pod should be able to communicate with every other Pod on the same node
+- Every Pod should be able to communicate with every other Pod on other nodes without NAT
+
+There are many network solutions or network plugins available that implement these requirements, such as:
+
+- Weaveworks
+- Flannel
+- Cilium
+- VMWare NSX
+
+These network plugins are
+
+- installed in directory `/opt/cni/bin`
+- configured in directory `/etc/cni/net.d`
