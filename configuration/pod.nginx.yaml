@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+  namespace: configuration
+spec:
+  containers:
+    - name: nginx
+      image: nginx:latest
+      ports:
+        - containerPort: 80
+      envFrom:
+        - configMapRef:
+            name: greeting
+      volumeMounts:
+        - name: config-volume
+          mountPath: /etc/greeting
+        - name: secret-volume
+          mountPath: /etc/secret
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+  volumes:
+    - name: config-volume
+      configMap:
+        name: greeting-files
+    - name: secret-volume
+      secret:
+        secretName: greeting-secret

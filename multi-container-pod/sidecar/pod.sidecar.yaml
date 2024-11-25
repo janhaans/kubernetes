@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sidecar
+spec:
+  containers:
+    - name: main
+      image: nginx:latest
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: nginx-logs
+          mountPath: /var/log/nginx
+    - name: sidecar
+      image: alpine:latest
+      command:
+        - sh
+        - -c
+        - |
+          apk update && \
+          apk add bash && \
+          echo "Package bash installed" && \
+          apk add curl && \
+          echo "Package curl installed" && \
+          /bin/bash -c "/opt/scripts/error-monitoring.sh"
+          "
+      volumeMounts:
+        - name: nginx-logs
+          mountPath: /var/log/nginx
+        - name: error-monitoring
+          mountPath: /opt/scripts
+  volumes:
+    - name: nginx-logs
+      emptyDir: {}
+    - name: error-monitoring
+      configMap:
+        name: error-monitoring
+        defaultMode: 0655

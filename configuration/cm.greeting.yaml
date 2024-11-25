@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: greeting
+  namespace: configuration
+data:
+  message: Hello, World!
