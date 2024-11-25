@@ -1,13 +1,15 @@
+# Sidecar Container
+
 ```
 kubectl create configmap error-monitoring --from-file=error-monitoring.sh
 kubectl apply -f pod.side-car.yaml
 ```
 
-- A ConfigMap volume is always mounted as read-only (`defaultMode = 0644`). Because the ConfigMap `error-monitoring` has not a configuration file (should be immutable), but a bash script (should be executable), the ConfigMap volume has been defined with `defaultMode: 0655`
+- A ConfigMap volume is always mounted as read-only (`defaultMode = 0644`). Because ConfigMap `error-monitoring` has not a configuration file (should be immutable), but a bash script (should be executable), the ConfigMap volume has been defined with `defaultMode: 0655`
 
-- Note that the sidecar container has been defined with a command that calls `sh` to install the `bash` and `curl` packages and then calls `bash` to execute the `error-monitoring.sh` script.
+- Note that the sidecar container has been defined with a command that calls `sh` to install `bash` and `curl` packages and then calls `bash` to execute the `error-monitoring.sh` script.
 
-- The `alpine` image has been used instead of the `busybox` image in the `sidecar` container, because the script `error-monitoring` is a bash script and `busybox` image does not have bash.
+- In `sidecar` container image `alpine` has been used instead of `busybox`, because script `error-monitoring.sh` is a `bash` script and `busybox` does not have `bash`.
 
 - Simulate an error in the nginx logging:
 
