@@ -1,8 +1,14 @@
+# kind-config.yaml
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
   - role: control-plane
-  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
     extraPortMappings:
       - containerPort: 80 # For ingress traffic (HTTP)
         hostPort: 80
@@ -10,4 +16,5 @@ nodes:
       - containerPort: 443 # For ingress traffic (HTTPS)
         hostPort: 443
         protocol: TCP
+  - role: worker
   - role: worker
